@@ -1,0 +1,51 @@
+name: Permintaan fitur
+description: Usulkan fitur atau peningkatan untuk Catet.in
+title: "[Fitur]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Jelaskan kebutuhan pengguna dan usulan perilakunya. Jangan menyertakan data
+        transaksi asli, kredensial, atau isi notifikasi/email pribadi.
+
+  - type: textarea
+    id: kebutuhan
+    attributes:
+      label: Kebutuhan atau masalah
+      description: Situasi apa yang ingin diselesaikan fitur ini?
+    validations:
+      required: true
+
+  - type: textarea
+    id: usulan
+    attributes:
+      label: Usulan solusi
+      description: Bagaimana fitur ini sebaiknya bekerja dari sudut pandang pengguna?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area aplikasi
+      options:
+        - Ingesti notifikasi
+        - Ingesti Gmail
+        - Transaksi dan review
+        - Anggaran dan analitik
+        - Asisten AI
+        - Backup dan keamanan
+        - Lainnya
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatif
+    attributes:
+      label: Alternatif yang sudah dipertimbangkan
+      description: Opsional; jelaskan solusi sementara atau pendekatan lain.
+    validations:
+      required: false
+

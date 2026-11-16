@@ -1,0 +1,64 @@
+name: Laporan bug
+description: Laporkan masalah yang dapat direproduksi pada Catet.in
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terima kasih sudah melaporkan masalah. Jangan menempelkan nominal atau data
+        transaksi asli, nomor rekening, isi notifikasi/email, token, atau log yang memuat
+        data pribadi. Gunakan data sintetis atau sensor bagian sensitif.
+
+  - type: textarea
+    id: ringkasan
+    attributes:
+      label: Ringkasan masalah
+      description: Apa yang terjadi dan bagian aplikasi mana yang terdampak?
+    validations:
+      required: true
+
+  - type: textarea
+    id: langkah-reproduksi
+    attributes:
+      label: Langkah reproduksi
+      placeholder: |
+        1. Buka ...
+        2. Pilih ...
+        3. Amati ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: hasil
+    attributes:
+      label: Hasil saat ini dan yang diharapkan
+      description: Jelaskan perbedaannya tanpa menyertakan data keuangan asli.
+    validations:
+      required: true
+
+  - type: input
+    id: versi
+    attributes:
+      label: Versi atau commit
+      placeholder: 0.1.0-debug / abc1234
+    validations:
+      required: true
+
+  - type: input
+    id: perangkat
+    attributes:
+      label: Perangkat dan versi Android
+      placeholder: Merek dan model, Android 14
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privasi
+    attributes:
+      label: Konfirmasi privasi
+      options:
+        - label: Saya sudah menghapus atau menyamarkan data pribadi dan keuangan dari laporan ini.
+          required: true
+

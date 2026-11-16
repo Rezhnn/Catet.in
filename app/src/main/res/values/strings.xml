@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Catet.in</string>
+    <string name="notification_listener_label">Catet.in — pembaca transaksi</string>
+    <string name="widget_description">Ringkasan pengeluaran dan anggaran Catet.in</string>
+    <string name="widget_title">Catet.in · bulan ini</string>
+    <string name="widget_empty_amount">Rp0</string>
+    <string name="widget_empty_caption">Belum ada transaksi</string>
+    <string name="widget_open">Ketuk untuk membuka</string>
+</resources>

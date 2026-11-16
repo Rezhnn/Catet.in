@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="catet_background">#FFF8F3EA</color>
+    <color name="catet_primary">#FF145C52</color>
+    <color name="catet_primary_dark">#FF0B3D36</color>
+    <color name="catet_accent">#FFF2A93B</color>
+</resources>

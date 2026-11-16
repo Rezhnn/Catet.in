@@ -1,0 +1,54 @@
+Catet.in
+Copyright (c) 2026 Rezhnn and contributors
+
+This application is licensed under the GNU Affero General Public License,
+version 3. The full license text is in LICENSE.
+
+Product lineage
+---------------
+
+Catet.in implements a product and architecture brief derived from the
+requirements document in this repository. The brief studies the public
+PennyWise AI project by sarim2000:
+
+  https://github.com/sarim2000/pennywiseai-tracker
+
+PennyWise is licensed under AGPL-3.0. Catet.in is an independent Android
+implementation written for this repository. It does not ship PennyWise's name,
+logo, store assets, proprietary services, or trademark. PennyWise's copyright
+and license continue to apply to PennyWise itself and to any code taken from
+it. No such code is intentionally included here.
+
+Model
+-----
+
+Qwen3.5-0.8B
+Copyright Qwen Team / Alibaba Cloud
+License: Apache License 2.0
+  https://huggingface.co/Qwen/Qwen3.5-0.8B
+
+The Q4_0 GGUF distribution used by the app is published by ggml-org:
+  https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF
+
+Qwen and the Qwen logo are trademarks of their respective owners. Their use
+here is descriptive attribution and does not imply endorsement.
+
+Runtime and libraries
+---------------------
+
+llama-android (dev.ffmpegkit-maintained:llama-android)
+Copyright its contributors; MIT License
+  https://github.com/ffmpegkit-maintained/llama-android
+
+llama.cpp
+Copyright Georgi Gerganov and contributors; MIT License
+  https://github.com/ggml-org/llama.cpp
+
+AndroidX, Jetpack Compose, Room, WorkManager, DataStore, Hilt, AppAuth,
+kotlinx.coroutines, kotlinx.serialization, Kotlin, Gradle, and other build
+dependencies retain their own copyrights and licenses. Their license metadata
+is available from the corresponding published artifacts and repositories.
+
+Gmail integration uses the Google Gmail API under Google's API Services User
+Data Policy. Catet.in requests only the gmail.readonly scope and processes mail
+locally. Google and Gmail are trademarks of Google LLC.

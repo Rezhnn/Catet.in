@@ -1,0 +1,171 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build dan unit test (tanpa emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Siapkan JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Siapkan Gradle dan cache dependensi
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref_name != github.event.repository.default_branch }}
+
+      - name: Siapkan Android SDK 37
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: true
+
+      - name: Pasang platform Android 37
+        run: |
+          sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+
+      - name: Siapkan Gradle wrapper
+        run: chmod +x gradlew
+
+      - name: Compile Kotlin debug
+        run: ./gradlew :app:compileDebugKotlin --console=plain --stacktrace
+
+      - name: Jalankan parser dan app unit test
+        run: ./gradlew :parser-core:test :app:testDebugUnitTest --console=plain --stacktrace
+
+      - name: Buat merged manifest debug
+        run: ./gradlew :app:processDebugMainManifest --console=plain --stacktrace
+
+      - name: Verifikasi izin berbahaya pada merged manifest
+        env:
+          MERGED_MANIFEST: app/build/intermediates/merged_manifest/debug/processDebugMainManifest/AndroidManifest.xml
+        run: |
+          python3 - <<'PY'
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          ANDROID_NS = "http://schemas.android.com/apk/res/android"
+          manifest_path = Path(os.environ["MERGED_MANIFEST"])
+          if not manifest_path.is_file():
+              sys.exit(f"Manifest merged tidak ditemukan: {manifest_path}")
+
+          root = ET.parse(manifest_path).getroot()
+          permissions = set()
+          for element in root.iter():
+              tag = element.tag.rsplit("}", 1)[-1]
+              if not tag.startswith("uses-permission"):
+                  continue
+              name = element.attrib.get(f"{{{ANDROID_NS}}}name")
+              if name:
+                  permissions.add(name)
+
+          dangerous_permissions = {
+              "android.permission.ACCEPT_HANDOVER",
+              "android.permission.ACCESS_BACKGROUND_LOCATION",
+              "android.permission.ACCESS_COARSE_LOCATION",
+              "android.permission.ACCESS_FINE_LOCATION",
+              "android.permission.ACCESS_MEDIA_LOCATION",
+              "android.permission.ACTIVITY_RECOGNITION",
+              "android.permission.ANSWER_PHONE_CALLS",
+              "android.permission.BLUETOOTH_ADVERTISE",
+              "android.permission.BLUETOOTH_CONNECT",
+              "android.permission.BLUETOOTH_SCAN",
+              "android.permission.BODY_SENSORS",
+              "android.permission.BODY_SENSORS_BACKGROUND",
+              "android.permission.CALL_PHONE",
+              "android.permission.CAMERA",
+              "android.permission.GET_ACCOUNTS",
+              "android.permission.NEARBY_WIFI_DEVICES",
+              "android.permission.POST_NOTIFICATIONS",
+              "android.permission.PROCESS_OUTGOING_CALLS",
+              "android.permission.READ_CALENDAR",
+              "android.permission.READ_CALL_LOG",
+              "android.permission.READ_CONTACTS",
+              "android.permission.READ_EXTERNAL_STORAGE",
+              "android.permission.READ_MEDIA_AUDIO",
+              "android.permission.READ_MEDIA_IMAGES",
+              "android.permission.READ_MEDIA_VIDEO",
+              "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+              "android.permission.READ_PHONE_NUMBERS",
+              "android.permission.READ_PHONE_STATE",
+              "android.permission.READ_SMS",
+              "android.permission.RECEIVE_MMS",
+              "android.permission.RECEIVE_SMS",
+              "android.permission.RECORD_AUDIO",
+              "android.permission.SEND_SMS",
+              "android.permission.UWB_RANGING",
+              "android.permission.WRITE_CALENDAR",
+              "android.permission.WRITE_CALL_LOG",
+              "android.permission.WRITE_CONTACTS",
+              "android.permission.WRITE_EXTERNAL_STORAGE",
+          }
+
+          forbidden_permissions = {
+              "android.permission.READ_SMS",
+              "android.permission.RECEIVE_SMS",
+              "android.permission.SEND_SMS",
+              "android.permission.READ_CONTACTS",
+              "android.permission.ACCESS_FINE_LOCATION",
+              "android.permission.ACCESS_COARSE_LOCATION",
+              "android.permission.ACCESS_BACKGROUND_LOCATION",
+              "android.permission.BIND_ACCESSIBILITY_SERVICE",
+              "android.permission.QUERY_ALL_PACKAGES",
+          }
+
+          allowed_dangerous = {"android.permission.POST_NOTIFICATIONS"}
+
+          print("Izin pada merged manifest:")
+          for permission in sorted(permissions):
+              print(f"  - {permission}")
+
+          forbidden_found = sorted(permissions & forbidden_permissions)
+          unexpected_dangerous = sorted(
+              (permissions & dangerous_permissions) - allowed_dangerous
+          )
+
+          if forbidden_found:
+              sys.exit("Izin terlarang ditemukan: " + ", ".join(forbidden_found))
+          if unexpected_dangerous:
+              sys.exit(
+                  "Izin berbahaya di luar allow-list ditemukan: "
+                  + ", ".join(unexpected_dangerous)
+              )
+
+          allowed_found = sorted(permissions & allowed_dangerous)
+          if allowed_found:
+              print("Izin berbahaya yang diizinkan: " + ", ".join(allowed_found))
+          print("OK: tidak ada izin berbahaya di luar allow-list.")
+          PY
+
+      - name: Build APK debug
+        run: ./gradlew :app:assembleDebug --console=plain --stacktrace
+
+      - name: Unggah APK debug
+        uses: actions/upload-artifact@v7
+        with:
+          name: catetin-debug-${{ github.sha }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+

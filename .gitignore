@@ -1,0 +1,68 @@
+# Gradle
+.gradle/
+.kotlin/
+build/
+**/build/
+
+# Android Studio
+.idea/
+*.iml
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing and secrets
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+keystore_password.txt
+*.password
+.env
+.env.*
+*.pem
+client_secret*.json
+
+# Model and data artifacts
+*.gguf
+*.litertlm
+*.pennywisebackup
+*.catetinbackup
+samples/
+*.apk
+*.aab
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local evidence
+evidence/
+.graymatter/
+
+# Local logs and scratch
+*.log
+.scratch-*/
+
+# Downloaded binary dependencies (keep the Gradle wrapper JAR)
+*.aar
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.pom
+
+# Release packages and test coverage
+dist/
+coverage/
+*.exec
+
+# Additional signing material
+*.p12
+*.pfx
+signing.properties
+release-signing.properties
+
+# Python training cache
+__pycache__/
+*.pyc

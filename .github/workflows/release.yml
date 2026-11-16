@@ -1,0 +1,178 @@
+name: Rilis APK bertanda tangan
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag rilis (contoh: v0.1.0)"
+        required: true
+        type: string
+      prerelease:
+        description: "Tandai sebagai prerelease"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build release, verifikasi, dan publikasikan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validasi tag rilis
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag harus berbentuk versi semver berawalan v, misalnya v0.1.0."
+            exit 1
+          fi
+          git fetch --tags --force origin
+          if git rev-parse -q --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null; then
+            tag_sha="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
+            if [[ "$tag_sha" != "$GITHUB_SHA" ]]; then
+              echo "::error::Tag $RELEASE_TAG menunjuk ke $tag_sha, bukan commit workflow $GITHUB_SHA."
+              exit 1
+            fi
+          fi
+
+      - name: Siapkan JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Siapkan Gradle dan cache dependensi
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Siapkan Android SDK 37
+        uses: android-actions/setup-android@v4
+
+      - name: Pasang platform Android 37
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager "platforms;android-37" "build-tools;37.0.0"
+
+      - name: Siapkan keystore release sementara
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.CATETIN_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${KEYSTORE_BASE64:-}" ]]; then
+            echo "::error::Secret CATETIN_KEYSTORE_BASE64 belum diisi. Tambahkan keystore sebagai base64 di repository secrets."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/catetin-release.jks"
+          test -s "$RUNNER_TEMP/catetin-release.jks"
+
+      - name: Build, uji, tanda tangani, dan siapkan paket
+        shell: pwsh
+        env:
+          CATETIN_KEYSTORE_PATH: ${{ runner.temp }}/catetin-release.jks
+          CATETIN_KEYSTORE_PASSWORD: ${{ secrets.CATETIN_KEYSTORE_PASSWORD }}
+          CATETIN_KEY_ALIAS: ${{ secrets.CATETIN_KEY_ALIAS }}
+          CATETIN_KEY_PASSWORD: ${{ secrets.CATETIN_KEY_PASSWORD }}
+        run: ./scripts/release.ps1
+
+      - name: Siapkan metadata rilis
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' -t apks < <(find dist -maxdepth 1 -type f -name '*.apk' -print0)
+          if [[ ${#apks[@]} -ne 1 ]]; then
+            echo "::error::Diharapkan tepat satu APK di dist; ditemukan ${#apks[@]}."
+            exit 1
+          fi
+          apk="${apks[0]}"
+          apk_name="$(basename "$apk")"
+          test -f dist/checksums.txt
+          expected="$(awk -v file="$apk_name" '$2 == file { print $1 }' dist/checksums.txt)"
+          actual="$(sha256sum "$apk" | awk '{ print $1 }')"
+          if [[ -z "$expected" || "$expected" != "$actual" ]]; then
+            echo "::error::Checksum APK tidak cocok dengan dist/checksums.txt."
+            exit 1
+          fi
+          {
+            echo "apk=$apk"
+            echo "name=$apk_name"
+            echo "sha256=$actual"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Unggah artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: catetin-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            dist/*.apk
+            dist/checksums.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Susun catatan rilis
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## Catet.in ${RELEASE_TAG}"
+            echo
+            echo "Build ini dibuat dari commit \`${GITHUB_SHA}\` dan ditandatangani dengan sertifikat release."
+            echo
+            if [[ -f "docs/releases/${RELEASE_TAG}.md" ]]; then
+              cat "docs/releases/${RELEASE_TAG}.md"
+            else
+              echo "Lihat [CHANGELOG.md](CHANGELOG.md) untuk daftar perubahan."
+            fi
+            echo
+            echo "- Berkas: \`${{ steps.package.outputs.name }}\`"
+            echo "- SHA-256: \`${{ steps.package.outputs.sha256 }}\`"
+            echo "- Minimum Android: 8.0 (API 26)"
+            echo "- ABI native: \`arm64-v8a\`"
+            echo "- Daftar checksum: \`checksums.txt\`"
+            echo
+            echo "Verifikasi APK dengan \`apksigner verify --print-certs\` dan cocokkan SHA-256 sebelum dipasang."
+          } > release-notes.md
+
+      - name: Publikasikan GitHub Release
+        shell: bash
+        env:
+          APK_PATH: ${{ steps.package.outputs.apk }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Release $RELEASE_TAG sudah ada; workflow tidak menimpa release."
+            exit 1
+          fi
+
+          tag_arguments=(--target "$GITHUB_SHA")
+          if git rev-parse -q --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null; then
+            tag_arguments=(--verify-tag)
+          fi
+          prerelease_arguments=()
+          if [[ "$PRERELEASE" == "true" ]]; then
+            prerelease_arguments=(--prerelease)
+          fi
+
+          gh release create "$RELEASE_TAG" "$APK_PATH" dist/checksums.txt \
+            "${tag_arguments[@]}" \
+            "${prerelease_arguments[@]}" \
+            --title "Catet.in $RELEASE_TAG" \
+            --notes-file release-notes.md
