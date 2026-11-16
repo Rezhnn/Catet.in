@@ -44,7 +44,7 @@ Jaringan hanya dipakai untuk OAuth/Gmail dan unduhan model dari domain HTTPS yan
 Kebutuhan:
 
 - JDK 21
-- Android SDK 37 dengan platform 36/37 dan build tools yang cocok
+- Android SDK dengan platform `android-37.0` dan build-tools 37.0.0
 - Windows, macOS, atau Linux
 - Perangkat/emulator **arm64-v8a** untuk menjalankan fitur AI (kompilasi dapat dilakukan di x86_64)
 
