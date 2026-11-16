@@ -41,7 +41,7 @@ jobs:
 
       - name: Pasang platform Android 37
         run: |
-          sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+          sdkmanager --install "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Siapkan Gradle wrapper
         run: chmod +x gradlew
