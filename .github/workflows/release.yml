@@ -10,7 +10,7 @@ on:
       prerelease:
         description: "Tandai sebagai prerelease"
         required: true
-        default: true
+        default: false
         type: boolean
 
 concurrency:
