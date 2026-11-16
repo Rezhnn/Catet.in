@@ -16,7 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Rule
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ColorLens
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.RateReview
-import androidx.compose.material.icons.outlined.Rule
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.AlertDialog
@@ -76,7 +76,7 @@ fun SettingsScreen(
                 title = { Text("Pengaturan") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Kembali")
                     }
                 },
             )
@@ -107,7 +107,7 @@ fun SettingsScreen(
             }
             item {
                 SettingsRow(
-                    icon = Icons.Outlined.Rule,
+                    icon = Icons.AutoMirrored.Outlined.Rule,
                     title = "Aturan otomatis",
                     subtitle = "Kategorikan, ubah, atau blokir transaksi",
                     onClick = { onOpen(Overlay.Rules) },

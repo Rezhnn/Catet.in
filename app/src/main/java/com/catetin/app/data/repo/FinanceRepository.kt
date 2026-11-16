@@ -15,6 +15,7 @@ import com.catetin.app.data.db.DefaultSeed
 import com.catetin.app.data.db.GmailDao
 import com.catetin.app.data.db.GmailSenderEntity
 import com.catetin.app.data.db.GmailSyncEntity
+import com.catetin.app.data.db.ManualEntryDao
 import com.catetin.app.data.db.ReviewDao
 import com.catetin.app.data.db.ReviewItemEntity
 import com.catetin.app.data.db.RuleDao
@@ -53,6 +54,7 @@ data class IngestOutcome(
 @Singleton
 class FinanceRepository @Inject constructor(
     private val transactionDao: TransactionDao,
+    private val manualEntryDao: ManualEntryDao,
     private val sourceEventDao: SourceEventDao,
     private val categoryDao: CategoryDao,
     private val accountDao: AccountDao,
@@ -136,7 +138,7 @@ class FinanceRepository @Inject constructor(
         currency: String = "IDR",
     ): Long {
         val now = System.currentTimeMillis()
-        val transactionId = transactionDao.insert(
+        val transactionId = manualEntryDao.insertManual(
             TransactionEntity(
                 amount = amount.stripTrailingZeros().toPlainString(),
                 currency = currency,
@@ -149,8 +151,6 @@ class FinanceRepository @Inject constructor(
                 createdAt = now,
                 updatedAt = now,
             ),
-        )
-        sourceEventDao.insertIgnore(
             SourceEventEntity(
                 type = "MANUAL",
                 externalId = UUID.randomUUID().toString(),
@@ -159,7 +159,6 @@ class FinanceRepository @Inject constructor(
                 receivedAt = occurredAt,
                 parserId = "manual",
                 parseStatus = "PARSED",
-                transactionId = transactionId,
             ),
         )
         return transactionId

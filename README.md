@@ -15,7 +15,7 @@
 
 Catet.in adalah aplikasi Android lokal-pertama untuk mencatat pemasukan, pengeluaran, transfer, anggaran, dan saldo. Sumber utama otomatisasinya adalah **notifikasi aplikasi bank/e-wallet yang diizinkan pengguna** dan **Gmail dengan akses baca saja**. Tidak ada SMS, iklan, analytics, atau pengiriman data keuangan ke server Catet.in.
 
-**[Unduh APK v0.1.0](https://github.com/Rezhnn/Catet.in/releases/latest)** · [Panduan Gmail](docs/GMAIL_SETUP.md) · [Arsitektur](docs/ARCHITECTURE.md) · [Keamanan](docs/SECURITY.md)
+**[Unduh APK v0.1.1](https://github.com/Rezhnn/Catet.in/releases/latest)** · [Panduan Gmail](docs/GMAIL_SETUP.md) · [Arsitektur](docs/ARCHITECTURE.md) · [Keamanan](docs/SECURITY.md)
 
 Proyek ini dibangun dari [PRD dan rencana implementasi](docs/PRD.md) yang disusun untuk kebutuhan pribadi. Implementasinya ditulis sebagai aplikasi Android baru; bukan fork kode PennyWise.
 
@@ -110,7 +110,7 @@ Arsitektur dan batas kepercayaan dijelaskan di [docs/ARCHITECTURE.md](docs/ARCHI
 
 ## Status rilis
 
-Versi `0.1.0` adalah baseline awal. APK yang dipublikasikan dari mesin build ini ditandatangani dengan keystore rilis lokal; detail dan checksum dicantumkan pada halaman GitHub Releases. Sebelum dipakai sebagai satu-satunya catatan keuangan, lakukan uji pada perangkat target dan simpan backup JSON di lokasi aman.
+Versi `0.1.1` memperbaiki force close Beranda setelah data anggaran dan transaksi dibuat, memisahkan Target Capaian, dan menambahkan tombol unduh model di Asisten. APK ditandatangani dengan keystore rilis yang sama seperti `0.1.0`, sehingga dapat dipasang sebagai pembaruan tanpa menghapus data; detail dan checksum dicantumkan pada halaman GitHub Releases. Sebelum dipakai sebagai satu-satunya catatan keuangan, simpan backup JSON di lokasi aman.
 
 Batasan yang masih perlu diuji di perangkat nyata: alur OAuth Gmail live, perilaku NotificationListener pada OEM (Xiaomi/Oppo/Vivo/Samsung), profil memori 4 GB, dan pemuatan Qwen3.5 melalui `llama.cpp`.
 

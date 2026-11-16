@@ -39,7 +39,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.catetin.app.data.db.TransactionEntity
+import com.catetin.app.domain.budget.BudgetMath
 import com.catetin.app.ui.MainViewModel
+import com.catetin.app.ui.ListKeys
 import com.catetin.app.ui.components.CatetCard
 import com.catetin.app.ui.components.HeroCard
 import com.catetin.app.ui.components.LinearProgress
@@ -58,6 +60,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenSources: () -> Unit,
     onOpenReview: () -> Unit,
+    onOpenBudgets: () -> Unit,
     onAdd: () -> Unit,
     onOpenTransaction: (Long) -> Unit,
     onSeeAll: () -> Unit,
@@ -65,6 +68,7 @@ fun HomeScreen(
     val transactions by mainViewModel.monthTransactions.collectAsStateWithLifecycle()
     val recent by mainViewModel.recentTransactions.collectAsStateWithLifecycle()
     val budgets by mainViewModel.budgets.collectAsStateWithLifecycle()
+    val activeBudgets = remember(budgets) { budgets.filter { it.type != BudgetMath.TARGET } }
     val reviewCount by mainViewModel.pendingReviewCount.collectAsStateWithLifecycle()
     val granted = rememberNotificationAccessGranted()
 
@@ -174,22 +178,20 @@ fun HomeScreen(
                 }
             }
 
-            if (budgets.isNotEmpty()) {
-                item { SectionTitle("Anggaran", "Kelola", onOpenSettings) }
-                items(budgets.take(2), key = { it.id }) { budget ->
-                    val spent = transactions.filter {
-                        it.currency == budget.currency &&
-                            it.direction == "EXPENSE" &&
-                            (budget.category == null || it.category == budget.category)
-                    }.fold(BigDecimal.ZERO) { acc, t -> acc + (t.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO) }
-                    val limit = budget.amount.toBigDecimalOrNull() ?: BigDecimal.ZERO
-                    val fraction = if (limit > BigDecimal.ZERO) (spent.toFloat() / limit.toFloat()) else 0f
+            if (activeBudgets.isNotEmpty()) {
+                item { SectionTitle("Batas & estimasi", "Kelola", onOpenBudgets) }
+                items(activeBudgets.take(2), key = { ListKeys.budget(it.id) }) { budget ->
+                    val spent = BudgetMath.budgetSpent(budget, transactions)
+                    val limit = BudgetMath.amount(budget)
+                    val fraction = BudgetMath.fraction(spent, limit)
                     CatetCard(Modifier.padding(vertical = 4.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column(Modifier.weight(1f)) {
                                 Text(budget.name, style = MaterialTheme.typography.titleMedium)
                                 Text(
-                                    CurrencyFormatter.format(spent, budget.currency) + " dari " + CurrencyFormatter.format(limit, budget.currency),
+                                    CurrencyFormatter.format(spent, budget.currency) + " dari " +
+                                        BudgetMath.typeLabel(budget.type).lowercase() + " " +
+                                        CurrencyFormatter.format(limit, budget.currency),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -225,7 +227,7 @@ fun HomeScreen(
                     }
                 }
             } else {
-                items(recent.take(5), key = { it.id }) { transaction ->
+                items(recent.take(5), key = { ListKeys.transaction(it.id) }) { transaction ->
                     TransactionRow(transaction, onClick = { onOpenTransaction(transaction.id) })
                 }
             }

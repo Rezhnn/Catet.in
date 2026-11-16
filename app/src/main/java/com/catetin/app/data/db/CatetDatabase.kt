@@ -28,6 +28,7 @@ import androidx.sqlite.driver.AndroidSQLiteDriver
 )
 abstract class CatetDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
+    abstract fun manualEntryDao(): ManualEntryDao
     abstract fun sourceEventDao(): SourceEventDao
     abstract fun categoryDao(): CategoryDao
     abstract fun accountDao(): AccountDao

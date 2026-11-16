@@ -19,14 +19,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Memory
-import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -59,6 +59,7 @@ import com.catetin.app.ai.model.ModelCatalog
 import com.catetin.app.ai.model.ModelOperation
 import com.catetin.app.ui.components.CatetCard
 import com.catetin.app.ui.components.StatusPill
+import java.io.File
 
 @Composable
 fun ModelManagerScreen(
@@ -73,7 +74,7 @@ fun ModelManagerScreen(
     var showConsent by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     val spec = ModelCatalog.qwenQ4
-    val installed = model?.filePath != null
+    val installed = model?.filePath?.let { File(it).isFile } == true
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) viewModel.importModel(uri)
@@ -92,7 +93,7 @@ fun ModelManagerScreen(
                 title = { Text("Kelola model AI") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Kembali")
                     }
                 },
             )
@@ -243,7 +244,7 @@ fun ModelManagerScreen(
                         },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Outlined.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Sumber model resmi", style = MaterialTheme.typography.titleSmall)

@@ -5,6 +5,7 @@ import androidx.room3.Delete
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
+import androidx.room3.Transaction
 import androidx.room3.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -103,6 +104,23 @@ interface TransactionDao {
         """,
     )
     suspend fun getEmailOnlyTransactions(): List<TransactionEntity>
+}
+
+@Dao
+interface ManualEntryDao {
+    @Insert
+    suspend fun insertTransaction(transaction: TransactionEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSourceEvent(event: SourceEventEntity): Long
+
+    /** The ledger row and its audit source are committed together or not at all. */
+    @Transaction
+    suspend fun insertManual(transaction: TransactionEntity, sourceEvent: SourceEventEntity): Long {
+        val transactionId = insertTransaction(transaction)
+        insertSourceEvent(sourceEvent.copy(transactionId = transactionId))
+        return transactionId
+    }
 }
 
 @Dao

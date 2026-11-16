@@ -63,7 +63,7 @@ class AnalyticsViewModel @Inject constructor(
     private fun refreshTrend() {
         viewModelScope.launch {
             val today = LocalDate.now(ZoneId.systemDefault())
-            val formatter = DateTimeFormatter.ofPattern("MMM", Locale("id", "ID"))
+            val formatter = DateTimeFormatter.ofPattern("MMM", Locale.forLanguageTag("id-ID"))
             val points = (5 downTo 0).map { offset ->
                 val month = today.minusMonths(offset.toLong())
                 val start = month.withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()

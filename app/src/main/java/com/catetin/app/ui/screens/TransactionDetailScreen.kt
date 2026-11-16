@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Mail
@@ -68,7 +68,10 @@ fun TransactionDetailScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
 
-    LaunchedEffect(transactionId) { viewModel.load(transactionId) }
+    LaunchedEffect(transactionId) {
+        viewModel.clearError()
+        viewModel.load(transactionId)
+    }
 
     Scaffold(
         topBar = {
@@ -76,12 +79,14 @@ fun TransactionDetailScreen(
                 title = { Text("Detail transaksi") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Kembali")
                     }
                 },
                 actions = {
                     IconButton(onClick = onEdit) { Icon(Icons.Outlined.Edit, contentDescription = "Ubah") }
-                    IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Outlined.Delete, contentDescription = "Hapus") }
+                    IconButton(onClick = { confirmDelete = true }, enabled = !state.deleting) {
+                        Icon(Icons.Outlined.Delete, contentDescription = "Hapus")
+                    }
                 },
             )
         },
@@ -143,6 +148,14 @@ fun TransactionDetailScreen(
                 DetailRow("Sumber", if (state.sources.size > 1) state.sources.size.toString() + " sumber digabung" else "1 sumber")
             }
 
+            if (state.error != null) {
+                Text(
+                    state.error.orEmpty(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
             if (state.sources.isNotEmpty()) {
                 Text("Sumber data", style = MaterialTheme.typography.titleMedium)
                 state.sources.forEach { source ->
@@ -150,9 +163,10 @@ fun TransactionDetailScreen(
                 }
             }
 
-            if (!transaction.merchant.isNullOrBlank()) {
+            val merchant = transaction.merchant
+            if (!merchant.isNullOrBlank()) {
                 OutlinedButton(
-                    onClick = { onRule(transaction.merchant!!) },
+                    onClick = { onRule(merchant) },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(16.dp),
                 ) {
@@ -171,7 +185,7 @@ fun TransactionDetailScreen(
                 Button(onClick = {
                     confirmDelete = false
                     viewModel.delete(onBack)
-                }) { Text("Hapus") }
+                }, enabled = !state.deleting) { Text(if (state.deleting) "Menghapus…" else "Hapus") }
             },
             dismissButton = {
                 TextButton(onClick = { confirmDelete = false }) { Text("Batal") }

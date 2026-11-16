@@ -18,6 +18,8 @@ data class TransactionDetailState(
     val transaction: TransactionEntity? = null,
     val sources: List<SourceEventEntity> = emptyList(),
     val loading: Boolean = true,
+    val deleting: Boolean = false,
+    val error: String? = null,
 )
 
 @HiltViewModel
@@ -29,7 +31,10 @@ class TransactionDetailViewModel @Inject constructor(
     private var job: Job? = null
 
     fun load(id: Long) {
-        if (job?.isActive == true) return
+        if (loadedId == id && job?.isActive == true) return
+        job?.cancel()
+        loadedId = id
+        _state.value = TransactionDetailState()
         job = viewModelScope.launch {
             combine(
                 repository.observeTransaction(id),
@@ -42,9 +47,26 @@ class TransactionDetailViewModel @Inject constructor(
 
     fun delete(onDone: () -> Unit) {
         val id = _state.value.transaction?.id ?: return
+        if (_state.value.deleting) return
+        _state.value = _state.value.copy(deleting = true, error = null)
         viewModelScope.launch {
-            repository.deleteTransaction(id)
-            onDone()
+            try {
+                repository.deleteTransaction(id)
+                onDone()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                _state.value = _state.value.copy(
+                    deleting = false,
+                    error = "Transaksi belum dapat dihapus. Coba lagi.",
+                )
+            }
         }
     }
+
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
+    }
+
+    private var loadedId: Long? = null
 }

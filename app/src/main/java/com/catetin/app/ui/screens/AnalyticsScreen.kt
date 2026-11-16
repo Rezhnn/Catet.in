@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.catetin.app.ui.MainViewModel
+import com.catetin.app.ui.ListKeys
 import com.catetin.app.ui.components.CatetCard
 import com.catetin.app.ui.components.CategoryBar
 import com.catetin.app.ui.components.MiniBarChart
@@ -157,7 +158,7 @@ fun AnalyticsScreen(
                 }
             }
         } else {
-            items(byMerchant, key = { it.first }) { (merchant, amount) ->
+            items(byMerchant, key = { ListKeys.merchant(it.first) }) { (merchant, amount) ->
                 Row(
                     Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -169,13 +170,13 @@ fun AnalyticsScreen(
         }
         if (recurring.isNotEmpty()) {
             item { SectionTitle("Langganan / tagihan berulang") }
-            items(recurring, key = { "${it.merchant}-${it.currency}" }) { item ->
+            items(recurring, key = { ListKeys.recurring(it.merchant, it.currency) }) { item ->
                 CatetCard {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(Modifier.weight(1f)) {
                             Text(item.merchant, style = MaterialTheme.typography.titleSmall)
                             Text(
-                                "${item.occurrences} kali · terakhir ${item.lastDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale("id", "ID")))}",
+                                "${item.occurrences} kali · terakhir ${item.lastDate.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.forLanguageTag("id-ID")))}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

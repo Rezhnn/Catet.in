@@ -24,14 +24,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.BatteryAlert
 import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.NotificationsOff
-import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.catetin.app.BuildConfig
 import com.catetin.app.ingestion.notification.NotificationAccess
 import com.catetin.app.ui.MainViewModel
+import com.catetin.app.ui.ListKeys
 import com.catetin.app.ui.components.CatetCard
 import com.catetin.app.ui.components.StatusPill
 import com.catetin.app.ui.theme.Pine
@@ -112,7 +113,7 @@ fun SourcesScreen(
                 title = { Text("Sumber data") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Kembali")
                     }
                 },
             )
@@ -228,7 +229,7 @@ fun SourcesScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                items(gmailSenders, key = { "gmail-${it.pattern}" }) { sender ->
+                items(gmailSenders, key = { ListKeys.gmailSender(it.pattern) }) { sender ->
                     Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
                         Row(
                             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -259,7 +260,7 @@ fun SourcesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            items(allowlist, key = { it.packageName }) { entry ->
+            items(allowlist, key = { ListKeys.allowlist(it.packageName) }) { entry ->
                 val stat = notificationStats.firstOrNull { it.sourceApp == entry.packageName }
                 Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
                     Row(
@@ -337,7 +338,7 @@ fun SourcesScreen(
                     }.padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Outlined.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(8.dp))
                     Text("Kelola izin akun Google", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

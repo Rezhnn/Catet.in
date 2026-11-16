@@ -11,15 +11,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -66,7 +66,7 @@ private data class Tab(
 
 private val tabs = listOf(
     Tab("Beranda", Icons.Filled.Home, Icons.Outlined.Home),
-    Tab("Transaksi", Icons.Filled.ReceiptLong, Icons.Outlined.ReceiptLong),
+    Tab("Transaksi", Icons.AutoMirrored.Filled.ReceiptLong, Icons.AutoMirrored.Outlined.ReceiptLong),
     Tab("Anggaran", Icons.Filled.Savings, Icons.Outlined.Savings),
     Tab("Analitik", Icons.Filled.BarChart, Icons.Outlined.BarChart),
     Tab("Asisten", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
@@ -107,43 +107,44 @@ private fun SplashScreen() {
 @Composable
 private fun AppShell(mainViewModel: MainViewModel) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    var overlay by remember { mutableStateOf<Overlay?>(null) }
+    val overlays = remember { mutableStateListOf<Overlay>() }
+    val overlay = overlays.lastOrNull()
+    fun open(next: Overlay) { overlays.add(next) }
+    fun close() { if (overlays.isNotEmpty()) overlays.removeAt(overlays.lastIndex) }
 
-    BackHandler(enabled = overlay != null) { overlay = null }
+    BackHandler(enabled = overlay != null) { close() }
 
     if (overlay != null) {
-        val close = { overlay = null }
         when (val screen = overlay) {
-            Overlay.Settings -> SettingsScreen(mainViewModel, onBack = close, onOpen = { overlay = it })
-            Overlay.Sources -> SourcesScreen(mainViewModel, onBack = close, onReview = { overlay = Overlay.Review })
+            Overlay.Settings -> SettingsScreen(mainViewModel, onBack = ::close, onOpen = ::open)
+            Overlay.Sources -> SourcesScreen(mainViewModel, onBack = ::close, onReview = { open(Overlay.Review) })
             Overlay.Review -> ReviewScreen(
                 mainViewModel,
-                onBack = close,
-                onOpenTransaction = { overlay = Overlay.Detail(it) },
+                onBack = ::close,
+                onOpenTransaction = { open(Overlay.Detail(it)) },
             )
-            Overlay.Rules -> RulesScreen(mainViewModel, onBack = close, onOpenRule = { id, merchant -> overlay = Overlay.RuleEditor(id, merchant) })
-            Overlay.Backup -> BackupScreen(onBack = close)
-            Overlay.ModelManager -> ModelManagerScreen(onBack = close)
+            Overlay.Rules -> RulesScreen(mainViewModel, onBack = ::close, onOpenRule = { id, merchant -> open(Overlay.RuleEditor(id, merchant)) })
+            Overlay.Backup -> BackupScreen(onBack = ::close)
+            Overlay.ModelManager -> ModelManagerScreen(onBack = ::close)
             is Overlay.Detail -> TransactionDetailScreen(
                 mainViewModel,
                 transactionId = screen.transactionId,
-                onBack = close,
-                onEdit = { overlay = Overlay.AddTransaction(screen.transactionId) },
-                onRule = { merchant -> overlay = Overlay.RuleEditor(null, merchant) },
+                onBack = ::close,
+                onEdit = { open(Overlay.AddTransaction(screen.transactionId)) },
+                onRule = { merchant -> open(Overlay.RuleEditor(null, merchant)) },
             )
             is Overlay.AddTransaction -> AddTransactionScreen(
                 mainViewModel,
                 transactionId = screen.transactionId,
-                onBack = close,
-                onSaved = { overlay = null },
+                onBack = ::close,
+                onSaved = ::close,
             )
             is Overlay.RuleEditor -> RuleEditorScreen(
                 mainViewModel,
                 ruleId = screen.ruleId,
                 seedMerchant = screen.seedMerchant,
-                onBack = close,
+                onBack = ::close,
             )
-            null -> Unit
         }
         return
     }
@@ -182,24 +183,25 @@ private fun AppShell(mainViewModel: MainViewModel) {
                 when (tab) {
                     0 -> HomeScreen(
                         mainViewModel,
-                        onOpenSettings = { overlay = Overlay.Settings },
-                        onOpenSources = { overlay = Overlay.Sources },
-                        onOpenReview = { overlay = Overlay.Review },
-                        onAdd = { overlay = Overlay.AddTransaction() },
-                        onOpenTransaction = { overlay = Overlay.Detail(it) },
+                        onOpenSettings = { open(Overlay.Settings) },
+                        onOpenSources = { open(Overlay.Sources) },
+                        onOpenReview = { open(Overlay.Review) },
+                        onOpenBudgets = { selectedTab = 2 },
+                        onAdd = { open(Overlay.AddTransaction()) },
+                        onOpenTransaction = { open(Overlay.Detail(it)) },
                         onSeeAll = { selectedTab = 1 },
                     )
                     1 -> TransactionsScreen(
                         mainViewModel,
-                        onAdd = { overlay = Overlay.AddTransaction() },
-                        onOpenTransaction = { overlay = Overlay.Detail(it) },
+                        onAdd = { open(Overlay.AddTransaction()) },
+                        onOpenTransaction = { open(Overlay.Detail(it)) },
                     )
-                    2 -> BudgetsScreen(mainViewModel, onAdd = { overlay = Overlay.AddTransaction() })
+                    2 -> BudgetsScreen(mainViewModel, onAdd = { open(Overlay.AddTransaction()) })
                     3 -> AnalyticsScreen(mainViewModel)
                     else -> AssistantScreen(
                         mainViewModel,
-                        onOpenModel = { overlay = Overlay.ModelManager },
-                        onOpenTransaction = { overlay = Overlay.Detail(it) },
+                        onOpenModel = { open(Overlay.ModelManager) },
+                        onOpenTransaction = { open(Overlay.Detail(it)) },
                     )
                 }
             }

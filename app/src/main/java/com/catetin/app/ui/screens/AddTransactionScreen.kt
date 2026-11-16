@@ -14,7 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
@@ -63,7 +63,7 @@ fun AddTransactionScreen(
     var showDatePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(transactionId) {
-        if (transactionId != null) viewModel.load(transactionId)
+        if (transactionId != null) viewModel.load(transactionId) else viewModel.reset()
     }
 
     Scaffold(
@@ -72,7 +72,7 @@ fun AddTransactionScreen(
                 title = { Text(if (transactionId == null) "Catat transaksi" else "Ubah transaksi") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Kembali")
                     }
                 },
             )

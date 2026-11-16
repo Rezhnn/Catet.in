@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,6 +52,7 @@ class AddTransactionViewModel @Inject constructor(
     }
 
     fun load(id: Long) {
+        _state.value = AddTransactionState()
         viewModelScope.launch {
             val transaction = repository.getTransaction(id) ?: return@launch
             _state.value = AddTransactionState(
@@ -65,8 +67,13 @@ class AddTransactionViewModel @Inject constructor(
         }
     }
 
+    fun reset() {
+        if (!_state.value.saving) _state.value = AddTransactionState()
+    }
+
     fun save(onSaved: () -> Unit) {
         val current = _state.value
+        if (current.saving) return
         val amount = CurrencyFormatter.parse(current.amount)
         if (amount == null || amount <= java.math.BigDecimal.ZERO) {
             _state.value = current.copy(error = "Nominal belum valid.")
@@ -74,9 +81,13 @@ class AddTransactionViewModel @Inject constructor(
         }
         _state.value = current.copy(saving = true, error = null)
         viewModelScope.launch {
-            if (current.editingId != null) {
-                val existing = repository.getTransaction(current.editingId)
-                if (existing != null) {
+            try {
+                if (current.editingId != null) {
+                    val existing = repository.getTransaction(current.editingId)
+                    if (existing == null) {
+                        _state.value = current.copy(saving = false, error = "Transaksi tidak ditemukan. Mungkin sudah dihapus.")
+                        return@launch
+                    }
                     repository.updateTransaction(
                         existing.copy(
                             amount = amount.stripTrailingZeros().toPlainString(),
@@ -88,19 +99,26 @@ class AddTransactionViewModel @Inject constructor(
                             status = "CONFIRMED",
                         ),
                     )
+                } else {
+                    repository.addManual(
+                        amount = amount,
+                        direction = current.direction,
+                        merchant = current.merchant.trim().ifBlank { null },
+                        category = current.category,
+                        occurredAt = current.occurredAt,
+                        narration = current.note.trim().ifBlank { null },
+                    )
                 }
-            } else {
-                repository.addManual(
-                    amount = amount,
-                    direction = current.direction,
-                    merchant = current.merchant.trim().ifBlank { null },
-                    category = current.category,
-                    occurredAt = current.occurredAt,
-                    narration = current.note.trim().ifBlank { null },
+                _state.value = _state.value.copy(saving = false)
+                onSaved()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                _state.value = _state.value.copy(
+                    saving = false,
+                    error = "Transaksi belum tersimpan. Coba lagi; data yang sudah ada tidak diubah.",
                 )
             }
-            _state.value = _state.value.copy(saving = false)
-            onSaved()
         }
     }
 }

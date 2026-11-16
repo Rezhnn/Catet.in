@@ -45,6 +45,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.catetin.app.data.db.TransactionEntity
 import com.catetin.app.ui.MainViewModel
+import com.catetin.app.ui.ListKeys
 import com.catetin.app.ui.components.TransactionRow
 import com.catetin.app.ui.theme.Pine
 import com.catetin.app.util.CurrencyFormatter
@@ -144,7 +145,7 @@ fun TransactionsScreen(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     groups.forEach { (day, dayTransactions) ->
-                        item(key = "header-" + day) {
+                        item(key = ListKeys.dayHeader(day)) {
                             Text(
                                 day,
                                 style = MaterialTheme.typography.labelLarge,
@@ -152,7 +153,7 @@ fun TransactionsScreen(
                                 modifier = Modifier.padding(top = 14.dp, bottom = 4.dp),
                             )
                         }
-                        items(dayTransactions, key = { it.id }) { transaction ->
+                        items(dayTransactions, key = { ListKeys.transaction(it.id) }) { transaction ->
                             TransactionRow(transaction, onClick = { onOpenTransaction(transaction.id) })
                         }
                     }

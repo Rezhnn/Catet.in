@@ -9,15 +9,24 @@ import com.catetin.app.ai.engine.AiEngineState
 import com.catetin.app.ai.engine.AiEngineStatus
 import com.catetin.app.ai.engine.LocalLlmEngine
 import com.catetin.app.ai.lifecycle.AiLifecycleCoordinator
+import com.catetin.app.ai.model.ModelInstaller
+import com.catetin.app.ai.model.ModelOperationState
 import com.catetin.app.ai.router.IndonesianKeywordIntentRouter
 import com.catetin.app.data.db.TransactionEntity
+import com.catetin.app.data.prefs.SettingsRepository
 import com.catetin.app.data.repo.FinanceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 
@@ -43,24 +52,55 @@ class AssistantViewModel @Inject constructor(
     private val repository: FinanceRepository,
     private val aiEngine: LocalLlmEngine,
     private val aiLifecycle: AiLifecycleCoordinator,
+    private val modelInstaller: ModelInstaller,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AssistantUiState())
     val state: StateFlow<AssistantUiState> = _state.asStateFlow()
     val aiStatus: StateFlow<AiEngineStatus> = aiLifecycle.status
+    val modelOperation: StateFlow<ModelOperationState> = modelInstaller.state
+    val aiModelConsent: StateFlow<Boolean> = settingsRepository.settings
+        .map { it.aiModelConsent }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     private var nextId = 1L
+    private var requestJob: Job? = null
+    private var visible = false
 
     fun onVisible() {
+        visible = true
         viewModelScope.launch {
-            val model = repository.assistantModel.first()
-            aiLifecycle.onAssistantVisible(model?.filePath)
+            activateInstalledModel()
         }
     }
 
-    fun onHidden() = aiLifecycle.onAssistantHidden()
+    fun onHidden() {
+        visible = false
+        aiLifecycle.onAssistantHidden()
+    }
 
     fun retryModel() {
         onVisible()
+    }
+
+    fun acceptModelConsentAndDownload() {
+        if (modelOperation.value.busy) return
+        viewModelScope.launch {
+            val consentStored = runCatching {
+                settingsRepository.setAiModelConsent(true)
+            }.isSuccess
+            if (consentStored) downloadModelNow()
+        }
+    }
+
+    fun retryModelDownload() {
+        if (modelOperation.value.busy) return
+        viewModelScope.launch {
+            val consentGiven = runCatching {
+                settingsRepository.settings.first().aiModelConsent
+            }.getOrDefault(false)
+            if (consentGiven) downloadModelNow()
+        }
     }
 
     fun setInput(value: String) { _state.value = _state.value.copy(input = value) }
@@ -74,23 +114,25 @@ class AssistantViewModel @Inject constructor(
             input = "",
             busy = true,
         )
-        viewModelScope.launch {
+        requestJob = viewModelScope.launch {
+            try {
             val intent = IndonesianKeywordIntentRouter.match(question)
             if (intent != null) {
                 val answer = queryExecutor.execute(intent)
                 appendAnswer(answer, fastPath = true)
             } else {
                 val model = repository.assistantModel.first()
-                if (model?.filePath == null) {
+                val modelPath = model?.filePath?.takeIf { File(it).isFile }
+                if (modelPath == null) {
                     appendAnswer(
                         AssistantAnswer(
-                            "Pertanyaan itu memerlukan model AI lokal. Unduh Qwen3.5-0.8B lewat “Kelola model AI” agar saya bisa memahami pertanyaan yang lebih bebas. " +
+                            "Pertanyaan itu memerlukan model AI lokal. Ketuk “Unduh model AI” di bagian atas tab Asisten agar saya bisa memahami pertanyaan yang lebih bebas. " +
                                 "Untuk sekarang coba tanyakan: “Pengeluaran bulan ini”, “Belanja makan minggu lalu”, atau “Saldo saat ini”.",
                         ),
                         fastPath = false,
                     )
                 } else {
-                    aiLifecycle.onAssistantVisible(model.filePath)
+                    aiLifecycle.onAssistantVisible(modelPath)
                     val ready = withTimeoutOrNull(120_000) {
                         aiStatus.first {
                             it.state in setOf(AiEngineState.READY, AiEngineState.ERROR, AiEngineState.UNLOADED)
@@ -119,6 +161,14 @@ class AssistantViewModel @Inject constructor(
                     }
                 }
             }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                appendAnswer(
+                    AssistantAnswer("Maaf, data belum dapat dibaca saat ini. Coba lagi sebentar lagi."),
+                    fastPath = false,
+                )
+            }
         }
     }
 
@@ -138,6 +188,18 @@ class AssistantViewModel @Inject constructor(
     }
 
     fun clear() {
+        requestJob?.cancel()
+        requestJob = null
         _state.value = AssistantUiState()
+    }
+
+    private suspend fun activateInstalledModel() {
+        val modelPath = repository.assistantModel.first()?.filePath?.takeIf { File(it).isFile }
+        aiLifecycle.onAssistantVisible(modelPath)
+    }
+
+    private suspend fun downloadModelNow() {
+        val downloaded = runCatching { modelInstaller.download() }.isSuccess
+        if (downloaded && visible) activateInstalledModel()
     }
 }
