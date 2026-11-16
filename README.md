@@ -9,10 +9,13 @@
 <p align="center">
   <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-0B3D36.svg"></a>
   <img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B-3DDC84.svg">
-  <img alt="Status: v0.1.0" src="https://img.shields.io/badge/status-v0.1.0-F2A93B.svg">
+  <a href="https://github.com/Rezhnn/Catet.in/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Rezhnn/Catet.in?label=release"></a>
+  <a href="https://github.com/Rezhnn/Catet.in/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Rezhnn/Catet.in/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
 Catet.in adalah aplikasi Android lokal-pertama untuk mencatat pemasukan, pengeluaran, transfer, anggaran, dan saldo. Sumber utama otomatisasinya adalah **notifikasi aplikasi bank/e-wallet yang diizinkan pengguna** dan **Gmail dengan akses baca saja**. Tidak ada SMS, iklan, analytics, atau pengiriman data keuangan ke server Catet.in.
+
+**[Unduh APK v0.1.0](https://github.com/Rezhnn/Catet.in/releases/latest)** · [Panduan Gmail](docs/GMAIL_SETUP.md) · [Arsitektur](docs/ARCHITECTURE.md) · [Keamanan](docs/SECURITY.md)
 
 Proyek ini dibangun dari [PRD dan rencana implementasi](docs/PRD.md) yang disusun untuk kebutuhan pribadi. Implementasinya ditulis sebagai aplikasi Android baru; bukan fork kode PennyWise.
 
