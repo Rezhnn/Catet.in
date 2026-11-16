@@ -66,7 +66,7 @@ jobs:
       - name: Pasang platform Android 37
         run: |
           yes | sdkmanager --licenses > /dev/null
-          sdkmanager "platforms;android-37" "build-tools;37.0.0"
+          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Siapkan keystore release sementara
         shell: bash
